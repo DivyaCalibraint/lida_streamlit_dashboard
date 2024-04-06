@@ -3,14 +3,10 @@ from lida import Manager, TextGenerationConfig, llm
 from lida.datamodel import Goal
 import os
 import pandas as pd
-import tkinter as tk
-from tkinter import messagebox
 
 
 # make data dir if it doesn't exist
 os.makedirs("data", exist_ok=True)
-root = tk.Tk()
-root.mainloop()
 
 st.set_page_config(
     page_title="Dashzz",
@@ -93,9 +89,9 @@ if openai_key:
     upload_own_data = st.sidebar.checkbox("Upload your own data")
 
     if upload_own_data:
-            uploaded_file = st.sidebar.file_uploader("Choose a CSV or JSON file", type=["csv", "json"])
+        uploaded_file = st.sidebar.file_uploader("Choose a CSV or JSON file", type=["csv", "json"])
     
-    if uploaded_file is not None:
+        if uploaded_file is not None:
             # Get the original file name and extension
             file_name, file_extension = os.path.splitext(uploaded_file.name)
 
@@ -114,9 +110,9 @@ if openai_key:
             datasets.append({"label": file_name, "url": uploaded_file_path})
 
             # st.sidebar.write("Uploaded file path: ", uploaded_file_path)
-    else:
-        selected_dataset = datasets[[dataset["label"]
-                                     for dataset in datasets].index(selected_dataset_label)]["url"]
+        else:
+            selected_dataset = datasets[[dataset["label"]
+                                        for dataset in datasets].index(selected_dataset_label)]["url"]
 
     if not selected_dataset:
         st.info("To continue, select a dataset from the sidebar on the left or upload your own.")
