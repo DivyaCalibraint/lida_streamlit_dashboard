@@ -3,22 +3,26 @@ from lida import Manager, TextGenerationConfig, llm
 from lida.datamodel import Goal
 import os
 import pandas as pd
+import tkinter as tk
+from tkinter import messagebox
 
 
 # make data dir if it doesn't exist
 os.makedirs("data", exist_ok=True)
+root = tk.Tk()
+root.mainloop()
 
 st.set_page_config(
-    page_title="LIDA: Automatic Generation of Visualizations and Infographics",
+    page_title="Dashzz",
     page_icon="📊",
 )
 
-st.write("# LIDA: Automatic Generation of Visualizations and Infographics using Large Language Models 📊")
+st.write("# Your Dashboard📊")
 
-st.sidebar.write("## Setup")
+# st.sidebar.write("## Setup")
 
 # Step 1 - Get OpenAI API key
-openai_key = os.getenv("OPENAI_API_KEY")
+openai_key = "HLTKfP2MhZEUw5CWJRGFzVSQUT4RtE4O41VRBNBz"
 
 if not openai_key:
     openai_key = st.sidebar.text_input("Enter OpenAI API key:")
@@ -31,19 +35,19 @@ else:
     display_key = openai_key[:2] + "*" * (len(openai_key) - 5) + openai_key[-3:]
     st.sidebar.write(f"OpenAI API key loaded from environment variable: {display_key}")
 
-st.markdown(
-    """
-    LIDA is a library for generating data visualizations and data-faithful infographics.
-    LIDA is grammar agnostic (will work with any programming language and visualization
-    libraries e.g. matplotlib, seaborn, altair, d3 etc) and works with multiple large language
-    model providers (OpenAI, Azure OpenAI, PaLM, Cohere, Huggingface). Details on the components
-    of LIDA are described in the [paper here](https://arxiv.org/abs/2303.02927) and in this
-    tutorial [notebook](notebooks/tutorial.ipynb). See the project page [here](https://microsoft.github.io/lida/) for updates!.
+# st.markdown(
+#     """
+#     LIDA is a library for generating data visualizations and data-faithful infographics.
+#     LIDA is grammar agnostic (will work with any programming language and visualization
+#     libraries e.g. matplotlib, seaborn, altair, d3 etc) and works with multiple large language
+#     model providers (OpenAI, Azure OpenAI, PaLM, Cohere, Huggingface). Details on the components
+#     of LIDA are described in the [paper here](https://arxiv.org/abs/2303.02927) and in this
+#     tutorial [notebook](notebooks/tutorial.ipynb). See the project page [here](https://microsoft.github.io/lida/) for updates!.
 
-   This demo shows how to use the LIDA python api with Streamlit. [More](/about).
+#    This demo shows how to use the LIDA python api with Streamlit. [More](/about).
 
-   ----
-""")
+#    ----
+# """)
 
 # Step 2 - Select a dataset and summarization method
 if openai_key:
@@ -52,7 +56,7 @@ if openai_key:
 
     # select model from gpt-4 , gpt-3.5-turbo, gpt-3.5-turbo-16k
     st.sidebar.write("## Text Generation Model")
-    models = ["gpt-4", "gpt-3.5-turbo", "gpt-3.5-turbo-16k"]
+    models = ["command"]
     selected_model = st.sidebar.selectbox(
         'Choose a model',
         options=models,
@@ -64,7 +68,7 @@ if openai_key:
     temperature = st.sidebar.slider(
         "Temperature",
         min_value=0.0,
-        max_value=1.0,
+        max_value=2.0,
         value=0.0)
 
     # set use_cache in sidebar
@@ -88,7 +92,8 @@ if openai_key:
 
     upload_own_data = st.sidebar.checkbox("Upload your own data")
 
-    if upload_own_data:
+    try:
+        if upload_own_data:
         uploaded_file = st.sidebar.file_uploader("Choose a CSV or JSON file", type=["csv", "json"])
 
         if uploaded_file is not None:
@@ -146,10 +151,12 @@ if openai_key:
         st.sidebar.markdown(
             f"<span> {selected_summary_method_description} </span>",
             unsafe_allow_html=True)
+    except:
+        messagebox.showinfo("Something went wrong", "Error occurred in the dataset!")
 
 # Step 3 - Generate data summary
 if openai_key and selected_dataset and selected_method:
-    lida = Manager(text_gen=llm("openai", api_key=openai_key))
+    lida = Manager(text_gen=llm("Cohere", api_key=openai_key))
     textgen_config = TextGenerationConfig(
         n=1,
         temperature=temperature,
@@ -162,7 +169,7 @@ if openai_key and selected_dataset and selected_method:
         selected_dataset,
         summary_method=selected_method,
         textgen_config=textgen_config)
-
+    print(summary)
     if "dataset_description" in summary:
         st.write(summary["dataset_description"])
 
@@ -198,9 +205,9 @@ if openai_key and selected_dataset and selected_method:
 
         # **** lida.goals *****
         goals = lida.goals(summary, n=num_goals, textgen_config=textgen_config)
-        st.write(f"## Goals ({len(goals)})")
+        # st.write(f"## Goals ({len(goals)})")
 
-        default_goal = goals[0].question
+        # default_goal = goals[0].question
         goal_questions = [goal.question for goal in goals]
 
         if own_goal:
@@ -211,62 +218,94 @@ if openai_key and selected_dataset and selected_method:
                 new_goal = Goal(question=user_goal, visualization=user_goal, rationale="")
                 goals.append(new_goal)
                 goal_questions.append(new_goal.question)
-
-        selected_goal = st.selectbox('Choose a generated goal', options=goal_questions, index=0)
-
-        # st.markdown("### Selected Goal")
-        selected_goal_index = goal_questions.index(selected_goal)
-        st.write(goals[selected_goal_index])
-
-        selected_goal_object = goals[selected_goal_index]
-
-        # Step 5 - Generate visualizations
-        if selected_goal_object:
-            st.sidebar.write("## Visualization Library")
-            visualization_libraries = ["seaborn", "matplotlib", "plotly"]
-
-            selected_library = st.sidebar.selectbox(
-                'Choose a visualization library',
-                options=visualization_libraries,
-                index=0
-            )
-
-            # Update the visualization generation call to use the selected library.
-            st.write("## Visualizations")
-
-            # slider for number of visualizations
-            num_visualizations = st.sidebar.slider(
-                "Number of visualizations to generate",
-                min_value=1,
-                max_value=10,
-                value=2)
-
+        data = selected_dataset
+        for eachGoal in goals:
+            print('summary------------',summary)
+            print('gole-----------',eachGoal)
+            visualization_librarie = "seaborn"
             textgen_config = TextGenerationConfig(
-                n=num_visualizations, temperature=temperature,
+                n=1,
+                temperature=temperature,
                 model=selected_model,
                 use_cache=use_cache)
-
-            # **** lida.visualize *****
+                
             visualizations = lida.visualize(
                 summary=summary,
-                goal=selected_goal_object,
+                goal=eachGoal,
                 textgen_config=textgen_config,
-                library=selected_library)
+                library=visualization_librarie
+            )
+            for  eachVisualization in visualizations:
+                if eachVisualization.raster:
+                    print(eachVisualization.raster)
+                    from PIL import Image
+                    import io
+                    import base64
+                    imgdata = base64.b64decode(eachVisualization.raster)
+                    img = Image.open(io.BytesIO(imgdata))
+                    st.write("### Graph")
+                    st.write(eachGoal.visualization)
+                    st.image(img, caption= 'visualization', use_column_width=True)
 
-            viz_titles = [f'Visualization {i+1}' for i in range(len(visualizations))]
+                st.write("## Visualization Code")
+                st.code(eachVisualization.code) 
 
-            selected_viz_title = st.selectbox('Choose a visualization', options=viz_titles, index=0)
 
-            selected_viz = visualizations[viz_titles.index(selected_viz_title)]
+        # selected_goal = st.selectbox('Choose a generated goal', options=goal_questions, index=0)
 
-            if selected_viz.raster:
-                from PIL import Image
-                import io
-                import base64
+        # # st.markdown("### Selected Goal")
+        # selected_goal_index = goal_questions.index(selected_goal)
+        # st.write(goals[selected_goal_index])
 
-                imgdata = base64.b64decode(selected_viz.raster)
-                img = Image.open(io.BytesIO(imgdata))
-                st.image(img, caption=selected_viz_title, use_column_width=True)
+        # selected_goal_object = goals[selected_goal_index]
 
-            st.write("### Visualization Code")
-            st.code(selected_viz.code)
+        # # Step 5 - Generate visualizations
+        # if selected_goal_object:
+        #     st.sidebar.write("## Visualization Library")
+        #     visualization_libraries = ["seaborn", "matplotlib", "plotly"]
+
+        #     selected_library = st.sidebar.selectbox(
+        #         'Choose a visualization library',
+        #         options=visualization_libraries,
+        #         index=0
+        #     )
+
+        #     # Update the visualization generation call to use the selected library.
+        #     st.write("## Visualizations")
+
+        #     # slider for number of visualizations
+        #     num_visualizations = st.sidebar.slider(
+        #         "Number of visualizations to generate",
+        #         min_value=1,
+        #         max_value=10,
+        #         value=2)
+
+        #     textgen_config = TextGenerationConfig(
+        #         n=num_visualizations, temperature=temperature,
+        #         model=selected_model,
+        #         use_cache=use_cache)
+
+        #     # **** lida.visualize *****
+        #     visualizations = lida.visualize(
+        #         summary=summary,
+        #         goal=selected_goal_object,
+        #         textgen_config=textgen_config,
+        #         library=selected_library)
+
+        #     viz_titles = [f'Visualization {i+1}' for i in range(len(visualizations))]
+
+        #     selected_viz_title = st.selectbox('Choose a visualization', options=viz_titles, index=0)
+
+        #     selected_viz = visualizations[viz_titles.index(selected_viz_title)]
+
+        #     if selected_viz.raster:
+        #         from PIL import Image
+        #         import io
+        #         import base64
+
+        #         imgdata = base64.b64decode(selected_viz.raster)
+        #         img = Image.open(io.BytesIO(imgdata))
+        #         st.image(img, caption=selected_viz_title, use_column_width=True)
+
+        #     st.write("### Visualization Code")
+        #     st.code(selected_viz.code)
