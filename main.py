@@ -92,11 +92,10 @@ if openai_key:
 
     upload_own_data = st.sidebar.checkbox("Upload your own data")
 
-    try:
-        if upload_own_data:
-        uploaded_file = st.sidebar.file_uploader("Choose a CSV or JSON file", type=["csv", "json"])
-
-        if uploaded_file is not None:
+    if upload_own_data:
+            uploaded_file = st.sidebar.file_uploader("Choose a CSV or JSON file", type=["csv", "json"])
+    
+    if uploaded_file is not None:
             # Get the original file name and extension
             file_name, file_extension = os.path.splitext(uploaded_file.name)
 
@@ -151,8 +150,6 @@ if openai_key:
         st.sidebar.markdown(
             f"<span> {selected_summary_method_description} </span>",
             unsafe_allow_html=True)
-    except:
-        messagebox.showinfo("Something went wrong", "Error occurred in the dataset!")
 
 # Step 3 - Generate data summary
 if openai_key and selected_dataset and selected_method:
